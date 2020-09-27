@@ -17,6 +17,8 @@ Telegram::Bot::Client.run(token) do |bot|
       bot.api.send_message(chat_id: message.chat.id, text: 'Paste YouTube link to convert to mp3')
     when 'Test'
       bot.api.send_message(chat_id: message.chat.id, text: 'Funktioniert!')
+    when 'log'
+      bot.api.send_message(chat_id: message.chat.id, text: File.read("#{music_folder}log.txt"))
     when youtube_regex
       bot.api.send_message(chat_id: message.chat.id, text: 'YouTube link recognized, fetching name')
       filename = Open3.capture3('youtube-dl', '--get-filename', '-o', '%(title)s.mp3', message.text).first.chomp.tr('"', '')
