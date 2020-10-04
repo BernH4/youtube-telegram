@@ -35,4 +35,28 @@ module Submethods
     debuglog.close
   end
 
+  def record_user(message)
+    return if File.read("#{@music_folder}users.txt").include?("#{message.chat.id}")
+
+    File.write("#{@music_folder}users.txt", "#{fullname(message.from)}: #{message.chat.id}\n", mode: 'a')
+  end
+  
+  def message_log(message)
+    File.write("#{@music_folder}messagelog.txt", "#{Time.now.strftime('%d.%m.%Y %H:%M')}: #{fullname(message.from)} \n#{message.text}\n", mode: 'a')
+  end
+
+  # def sleeptime_left(wakeup_time)
+  #   now = DateTime.now
+  #   p wakeup_time
+  #   puts wakeup_time
+  #   binding.pry
+  #   wakeup_time = DateTime.new(now.year, now.month, now.day + 1, wakeup_time[1].to_i, wakeup_time[2].to_i, 0, now.zone)
+  #   binding.pry
+  #   puts wakeup_time - now
+  # end
+  #
+  def sleeptime_left(wakeup_time)
+    # TODO
+  end
+
 end
