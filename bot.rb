@@ -2,8 +2,11 @@
 require 'telegram/bot'
 require 'dotenv/load'
 require 'open3'
+require 'yaml'
 require 'pry' # only for debugging
-require_relative 'submethods.rb'
+require 'ap'
+require_relative 'user'
+require_relative 'submethods'
 
 class Messenger
   include Submethods
@@ -16,21 +19,37 @@ class Messenger
     @sleep_regex = /sleep\ ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/
     @bothead = Telegram::Bot::Client
     @debuginfo = []
+    @users = restore_users
   end
 
   def recieve
     @bothead.run(@token) do |bot|
       bot.listen do |message|
+        ap @users
         chatid = message.chat.id
-        record_user(message)
+        if !@users.key?(chatid)
+          p "Neuer User wird angelegt"
+          bot.api.send_message(chat_id: chatid, text: 'Hallo, bitte kurz angeben woher du diesen Bot kennst um starten zu können:')
+          @users[chatid] = User.new(message)
+          save
+          next
+        else user = @users[chatid]
+        end
+        if user.not_validated?
+          tempsolution = user.validate(bot, chatid, message, @youtube_regex)
+          youtube_download(bot, chatid, tempsolution.text) if tempsolution.text.match?(@youtube_regex)
+          save
+          next
+        end
+        p "user ist validiert"
+        # record_user(message)
         message_log(message)
-        bot.api.send_message(chat_id: chatid, text: 'MP3 Download funktioniert derzeit nur sehr langsam (schlechte Uploadgeschwindigkeit)')
+        # bot.api.send_message(chat_id: chatid, text: 'MP3 Download funktioniert derzeit nur sehr langsam (schlechte Uploadgeschwindigkeit)')
         case message.text
-        when '/start'
-          bot.api.send_message(chat_id: chatid, text: 'Paste YouTube link to convert to mp3')
         when @youtube_regex
           youtube_download(bot, chatid, message)
-          write_debuglog
+          # write_debuglog
+          save
         when 'Test'
           bot.api.send_message(chat_id: chatid, text: 'Funktioniert!')
         when @sleep_regex 
@@ -44,6 +63,10 @@ class Messenger
         end
       end
     end
+  end
+
+  def save
+    File.open("#{@music_folder}users.yml", "w") { |file| file.write(@users.to_yaml) }
   end
 end
 
