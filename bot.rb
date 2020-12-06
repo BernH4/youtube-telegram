@@ -45,7 +45,7 @@ class Messenger
           case message.text
           when @youtube_regex
             parsed_message = parse_ytlink(bot, chatid, message) # check if the user sent a playlist link
-            youtube_download(bot, chatid, parsed_message)
+            youtube_download(bot, chatid, parsed_message) unless parsed_message.nil?
             write_debuglog
             save
           when 'Test'

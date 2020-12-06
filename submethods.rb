@@ -17,7 +17,10 @@ module Submethods
   end
 
   def parse_ytlink(bot, chatid, message)
-    if message.text.include?("&")
+    if message.text.include?("playlist")
+      bot.api.send_message(chat_id: chatid, text: 'Playlists werden derzeit nicht unterstützt.')
+      return nil
+    elsif message.text.include?("&")
       bot.api.send_message(chat_id: chatid, text: 'Playlists werden derzeit nicht unterstützt, nur erster Song wird heruntergeladen.')
       message.text = message.text.partition("&").first
     end
@@ -44,6 +47,7 @@ module Submethods
   end
 
   def write_debuglog
+    return if @debug_download.nil? || @debug_filename.nil?
     debuglog = File.open("#{@music_folder}debuglog.txt", 'a')
     debuglog.puts "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
     debuglog.puts "#{@music_folder}debuglog.txt", "#{@debug_download[3]} was downloaded by #{fullname(@debug_download[4])} at #{Time.now.strftime('%d.%m.%Y %H:%M')}\n"
