@@ -25,42 +25,51 @@ class Messenger
   def recieve
     @bothead.run(@token) do |bot|
       bot.listen do |message|
-        ap @users
-        chatid = message.chat.id
-        if !@users.key?(chatid)
-          p "Neuer User wird angelegt"
-          bot.api.send_message(chat_id: chatid, text: 'Hallo, bitte kurz angeben woher du diesen Bot kennst um starten zu können:')
-          @users[chatid] = User.new(message)
-          save
-          next
-        else user = @users[chatid]
-        end
-        if user.not_validated?
-          tempsolution = user.validate(bot, chatid, message, @youtube_regex)
-          youtube_download(bot, chatid, tempsolution.text) if tempsolution.text.match?(@youtube_regex)
-          save
-          next
-        end
-        p "user ist validiert"
-        # record_user(message)
-        message_log(message)
-        # bot.api.send_message(chat_id: chatid, text: 'MP3 Download funktioniert derzeit nur sehr langsam (schlechte Uploadgeschwindigkeit)')
-        case message.text
-        when @youtube_regex
-          youtube_download(bot, chatid, message)
-          # write_debuglog
-          save
-        when 'Test'
-          bot.api.send_message(chat_id: chatid, text: 'Funktioniert!')
-        when @sleep_regex 
-          sleeptime_left(message.text.split(/[\ :]/))
-        when 'log'
-          bot.api.send_message(chat_id: chatid, text: IO.readlines("#{@music_folder}log.txt")[-5..-1].join("~~~~~\n"))
-        when 'logall'
-          bot.api.send_message(chat_id: chatid, text: File.read("#{@music_folder}log.txt"))
-        when 'messagelog'
-          bot.api.send_message(chat_id: chatid, text: File.read("#{@music_folder}messagelog.txt")) if chatid == @my_id.to_i
-        end
+        begin
+          message_log(message)
+          chatid = message.chat.id
+          if !@users.key?(chatid)
+            puts "Neuer User wird angelegt"
+            bot.api.send_message(chat_id: chatid, text: "Hallo, bitte kurz Angeben wer diesen Bot erstellt hat. (Vorname)\n(Damit ihn nur bekannte nutzen können)")
+            @users[chatid] = User.new(message)
+            save
+            next
+          else user = @users[chatid]
+          end
+          unless user.validated
+            user.validate(bot, chatid, message) 
+            save
+            next
+          end
+          # bot.api.send_message(chat_id: chatid, text: 'MP3 Download funktioniert derzeit nur sehr langsam (schlechte Uploadgeschwindigkeit)')
+          case message.text
+          when @youtube_regex
+            parsed_message = parse_ytlink(bot, chatid, message) # check if the user sent a playlist link
+            youtube_download(bot, chatid, parsed_message)
+            write_debuglog
+            save
+          when 'Test'
+            bot.api.send_message(chat_id: chatid, text: 'Funktioniert!')
+          when @sleep_regex 
+            sleeptime_left(message.text.split(/[\ :]/))
+          when 'log'
+            bot.api.send_message(chat_id: chatid, text: IO.readlines("#{@music_folder}log.txt")[-5..-1].join("~~~~~\n"))
+          when 'logall'
+            bot.api.send_message(chat_id: chatid, text: File.read("#{@music_folder}log.txt"))
+          when 'messagelog'
+            bot.api.send_message(chat_id: chatid, text: File.read("#{@music_folder}messagelog.txt")) if chatid == @my_id.to_i
+          else 
+            bot.api.send_message(chat_id: chatid, text: 'Damit kann ich nichts anfangen.')
+          end
+				# rescue Telegram::Bot::Exceptions::ResponseError, RuntimeError => e
+				rescue => e
+          write_debuglog
+					puts "#{e.class}: #{e.message}"
+					e.backtrace.each { |log| puts log }
+          bot.api.send_message(chat_id: chatid, text: 'Etwas ist schief gegangen... Nochmal versuchen.')
+          bot.api.send_message(chat_id: @my_id.to_i, text: "#{e.class}: #{e.message}")
+        # rescue SocketError, Faraday::ConnectionFailed => e
+				end
       end
     end
   end
