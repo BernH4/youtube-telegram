@@ -63,13 +63,13 @@ class Messenger
           end
           # rescue Telegram::Bot::Exceptions::ResponseError, RuntimeError => e
 	  rescue => e
-          write_debuglog
-	  puts "#{e.class}: #{e.message}"
-	  e.backtrace.each { |log| puts log }
-          bot.api.send_message(chat_id: chatid, text: 'Etwas ist schief gegangen... Nochmal versuchen.')
-          bot.api.send_message(chat_id: @my_id.to_i, text: "#{e.class}: #{e.message}")
-        # rescue SocketError, Faraday::ConnectionFailed => e
-				end
+            write_debuglog
+	    puts "#{e.class}: #{e.message}"
+	    e.backtrace.each { |log| puts log }
+            bot.api.send_message(chat_id: chatid, text: 'Etwas ist schief gegangen... Nochmal versuchen.')
+            bot.api.send_message(chat_id: @my_id.to_i, text: "#{e.class}: #{e.message}")
+            # rescue SocketError, Faraday::ConnectionFailed => e
+	  end
       end
     end
   end
